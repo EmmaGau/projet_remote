@@ -1,12 +1,12 @@
 #!/bin/bash
 
-#SBATCH --job-name=remote_SAM           # Job name
+#SBATCH --job-name=remote_eval          # Job name
 #SBATCH --output=log/%x_%j.out          # Output file
 #SBATCH --time=24:00:00                 # Time limit (HH:MM:SS)
-#SBATCH --nodes=1                       # Number of nodes
-#SBATCH --ntasks=1                      # Number of tasks
-#SBATCH --gres=gpu:1                    # Number of GPUs
-#SBATCH --mem=32G                       # Memory per node
+#SBATCH --nodes=1                    # Number of nodes
+#SBATCH --ntasks=1                    # Number of tasks
+#SBATCH --gres=gpu:1                  # Number of GPUs
+#SBATCH --mem=40G                       # Memory per node
 #SBATCH --partition=gpu                 # Partition
 #SBATCH --cpus-per-task=8               # Number of CPU cores
 
@@ -14,6 +14,6 @@ module load anaconda3/2022.10/gcc-11.2.0
 module load cuda/10.2.89/intel-19.0.3.199
 module load parmetis/4.0.3/intel-19.0.3.199-intel-mpi-int32-real64
 
-source activate mariobros
+source activate remote2
 nvidia-smi
-python train.py
+python src/eval.py --checkpoint_path /gpfs/workdir/reumauxl/projet_remote/results/2024-04-11T13-43-23/checkpoint_21.pt --split_path split3 --ndwi True

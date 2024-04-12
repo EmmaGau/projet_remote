@@ -1,15 +1,61 @@
-# projet_remote
+# Foundation models of computer vision for river detection
 
-[MVA][Remote] Foundation models of computer vision for river detection
-<img width="796" alt="image" src="https://github.com/EmmaGau/projet_remote/assets/99346502/d412b4ad-f50a-4811-9881-e4a9f6e2f4e0">
+The objective of this project issue the foundation models learnt on natural images such as the recent Segment Anything Model (SAM) by Faceboook and exploit them on the downstream task of **river detection** using the [Dataset](https://zenodo.org/records/8314175) S1S2 Water.
 
-## Segment Anything Model
+In this project, we implemented two methods using SAM : one **unsupervised method** exploiting prompts, while the other entailed **fine-tuning SAM** on our dataset.\\
 
-## S1S2-Water dataset
+## I- Set up
 
-The S1S2-Water dataset is a global reference dataset for training, validation and testing of convolutional neural networks for semantic segmentation of surface water bodies in publicly available Sentinel-1 and Sentinel-2 satellite images. The dataset consists of 65 triplets of Sentinel-1 and Sentinel-2 images with quality checked binary water mask. Samples are drawn globally on the basis of the Sentinel-2 tile-grid (100 x 100 km) under consideration of pre-dominant landcover and availability of water bodies. Each sample is complemented with metadata and Digital Elevation Model (DEM) raster from the Copernicus DEM.
+### Step1 : load dataset
 
-This work was supported by the German Federal Ministry of Education and Research (BMBF) through the project "Künstliche Intelligenz zur Analyse von Erdbeobachtungs- und Internetdaten zur Entscheidungsunterstützung im Katastrophenfall" (AIFER) under Grant 13N15525, and by the Helmholtz Artificial Intelligence Cooperation Unit through the project "AI for Near Real Time Satellite-based Flood Response" (AI4FLOOD) under Grant ZT-IPF-5-39.
+Download a part of the dataset through this link : [Dataset](https://zenodo.org/records/8314175). For example we used **part_1**.
 
-- [Dataset](https://zenodo.org/records/8314175)
-- [Github tools](https://github.com/MWieland/s1s2_water/tree/main)
+### Step2: create a split folder
+
+Using the folder s1s2_water in our repository that is from the [github](https://github.com/MWieland/s1s2_water/tree/main).
+
+- To create a split, configure your split through the file `settings.toml`. Choose your `tile_shape`, enter the path where your data (from Step 1) is located, and the saving directory.
+
+- You need to change catalog.json of your downloaded data : only keep the scenes you have in your subset (downloaded in step 1)
+  Run the following command :
+
+  ```
+  python s1s2_water/s1s2_water.py --settings s1s2_water/settings.toml
+  ```
+
+## II- Code
+
+You can refer to our project report to understand the different methods used and their results.
+
+### Zero shot learning
+
+You can play with our notebooks s1_pipeline.ipynb and s2_pipeline.ipynb contains our zero shot learning pipeline with prompt engineering and sam inference.
+
+### Fine Tune SAM
+
+### Step 1 : Train file
+
+- To train sam you run :
+  ```
+  python src/train.py --split_path <path_to_split> --ndwi True
+  ```
+
+or with slurm
+
+```
+  sbatch src/eval_job.sh
+```
+
+### Step 2: Eval file
+
+You can evaluate your model using :
+
+```
+  python src/eval.py --checkpoint_path <path_to_checkpoint> --split_path <path_to_split> --ndwi True
+```
+
+or with slurm
+
+```
+  sbatch src/train_job.sh
+```

@@ -27,23 +27,25 @@ from pathlib import Path
 import datetime
 from torchsummary import summary
 from torch.optim import Adam
+import csv
+import pandas as pd
+import argparse
 
 from dataset import S1S2Dataset
-
-def plot_loss_curve(losses, file_name='loss_curve.png'):
+def plot_loss_curve(loss_values, file_name):
     plt.figure()
-    plt.plot(losses, label='Training Loss')
-    plt.title('Loss Curve')
-    plt.xlabel('Iterations')
+    plt.plot(loss_values)
+    plt.xlabel('Epoch')
     plt.ylabel('Loss')
-    plt.legend()
+    plt.title('Loss curve')
     plt.savefig(file_name)
     plt.close()
-    
-def main():
+
+
+def main(split_path, ndwi):
     # dataset 
     processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
-    dataset = S1S2Dataset("split3/train/img", "split3/train/msk", processor, ndwi=False)
+    dataset = S1S2Dataset(os.path.join(split_path,"train/img"), os.path.join(split_path,"train/msk"), processor, ndwi=ndwi)
     train_loader = DataLoader(dataset, batch_size=8 , shuffle=True)
     
     # Fine-tuning mask decoder 
@@ -68,9 +70,11 @@ def main():
     optimizer = Adam(model.mask_decoder.parameters(), lr=1e-4, weight_decay=0)
 
     model.train()
-    for epoch in range(100):  # loop over the dataset multiple times
+    
+    csv_file = os.path.join(save_dir, 'loss_per_epoch.csv')
+    header_written = False
+    for epoch in range(24):  # loop over the dataset multiple times
         running_loss = 0.0
-        print("Epoch: ", epoch+1)
         for i, data in enumerate(train_loader, 0):
             inputs, labels = data
             labels = labels.float().to(device)
@@ -85,10 +89,18 @@ def main():
             optimizer.step()
 
             running_loss += loss.item()
-            loss_values.append(loss.item())
-                
+            
+        losses = {'epoch':epoch + 1,'loss': running_loss/ len(train_loader)}
+        L = pd.DataFrame(losses, index=[0])
+        # Écriture dans le fichier CSV
+        if not header_written:
+            L.to_csv(csv_file, index=False) 
+            header_written = True  
+        else:
+            L.to_csv(csv_file, mode='a', header=False, index=False) 
+            
 
-        if (epoch + 1) % 5 == 0:
+        if (epoch + 1) % 3 == 0:
             checkpoint_filename = os.path.join(save_dir, 'checkpoint_{}.pt'.format(epoch+1))
             torch.save({
                 'epoch': epoch,
@@ -98,8 +110,6 @@ def main():
                 }, checkpoint_filename)
             print('Checkpoint saved at epoch {} to {}'.format(epoch+1, checkpoint_filename))
 
-
-   
     # Plot and save loss curve
     plot_loss_curve(loss_values,file_name= os.path.join(save_dir, 'loss_curve.png'))
 
@@ -107,5 +117,13 @@ def main():
     
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="SAM-fine-tune training")
+    parser.add_argument("--split_path", required = True, help="The file to perform inference on.")
+    parser.add_argument("--ndwi", required = True, help="Using RGB or R-NDWI-B")
+    
+    args = parser.parse_args()
+    split_path = args.split_path
+    ndwi = args.ndwi
+    
+    main(split_path, ndwi)
         
